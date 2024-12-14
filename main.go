@@ -11,7 +11,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"github.com/joho/godotenv"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -44,12 +43,8 @@ func main() {
 	}
 	db.AutoMigrate(&Movie{})
 
-	err = godotenv.Load()
-    if err != nil {
-        log.Fatalf("Ошибка загрузки .env файла: %v", err)
-    }
+	
 	botToken := os.Getenv("BOT_TOKEN")
-    log.Printf("Значение токена из переменной окружения: %s", botToken)
 	if botToken == "" {
     	log.Fatalf("Токен бота не найден в переменных окружения")
 }
