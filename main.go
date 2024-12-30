@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +52,8 @@ func containsForbiddenWord(title string) bool {
 	}
 	return false
 }
+
+var userStates = make(map[int64]string)
 
 func main() {
 	db, err := gorm.Open(sqlite.Open("movies.db"),&gorm.Config{})
@@ -136,23 +139,70 @@ func main() {
 				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("будем смотреть это!: %s", randomMovie.Title))
 				bot.Send(msg)
 
-			default:
-				if containsForbiddenWord(text) {
-					msg := tgbotapi.NewMessage(chatID, "увы Ваня....... мы не будем это смотреть.")
+			case text == "Удалить":
+				var movies []Movie
+				db.Find(&movies)
+				if len(movies) == 0 {
+					msg := tgbotapi.NewMessage(chatID, "Список фильмов пуст.")
 					bot.Send(msg)
-					continue
+					break
 				}
 
-				movie := Movie{Title: text}
-				result := db.Create(&movie)
-				if result.Error != nil {
-					msg := tgbotapi.NewMessage(chatID, "Произошла ошибка при сохранении фильма.")
-					bot.Send(msg)
-				}else {
-					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Фильм '%s' сохранен.", text))
-					bot.Send(msg)
+				var response strings.Builder
+				response.WriteString("Выберите фильм для удаления:\n")
+				for i, movie := range movies {
+					response.WriteString(fmt.Sprintf("%d. %s\n", i+1, movie.Title))
 				}
+				msg := tgbotapi.NewMessage(chatID, response.String())
+				bot.Send(msg)
+
+				userStates[chatID] = "wait_del"
+
+			default:
+				if state, exists := userStates[chatID]; exists && state == "wait_del" {
+					number, err := strconv.Atoi(text)
+					if err != nil {
+						msg := tgbotapi.NewMessage(chatID, "Введите корректный номер фильма.")
+						bot.Send(msg)
+						break
+					}
+					var movies []Movie
+					db.Find(&movies)
+					
+					if number < 1 || number > len(movies) {
+						msg := tgbotapi.NewMessage(chatID, "Некорректный номер фильма.")
+						bot.Send(msg)
+					}else {
+						movieToDelete := movies[number-1]
+						db.Delete(&movieToDelete)
+
+						photo := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath("assets/del_image.jpg"))
+						photo.Caption = fmt.Sprintf("Фильм '%s' удален.", movieToDelete.Title)
+						bot.Send(photo)
+					}
+					
+					delete(userStates, chatID)
+				}else {
+					if containsForbiddenWord(text) {
+						msg := tgbotapi.NewMessage(chatID, "увы Ваня....... мы не будем это смотреть.")
+						bot.Send(msg)
+						continue
+					}
+	
+					movie := Movie{Title: text}
+					result := db.Create(&movie)
+					if result.Error != nil {
+						msg := tgbotapi.NewMessage(chatID, "Произошла ошибка при сохранении фильма.")
+						bot.Send(msg)
+					}else {
+						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Фильм '%s' сохранен.", text))
+						bot.Send(msg)
+					}
+				}
+				
+
 			}
+			
 
 	}
 }
