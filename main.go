@@ -78,6 +78,7 @@ func main() {
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Список"),
 			tgbotapi.NewKeyboardButton("Рандом"),
+			tgbotapi.NewKeyboardButton("Удалить"),
 		),
 	)
 
