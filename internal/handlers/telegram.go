@@ -36,16 +36,17 @@ func (h *Handler) HandleMessage(update *tgbotapi.Update) error {
 	switch {
 	case text == "/start":
 		return h.handleStart(chatID)
-	case text == "Список":
+	case text == "Список" || text == "список":
 		return h.handleList(chatID)
-	case text == "Рандом":
+	case text == "Рандом" || text == "рандом":
 		return h.handleRandom(chatID)
-	case text == "Удалить":
+	case text == "Удалить" || text == "удалить":
 		return h.handleDelete(chatID)
 	default:
 		return h.handleDefault(chatID, text)
 	}
 }
+
 func (h *Handler) handleStart(chatID int64) error {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(

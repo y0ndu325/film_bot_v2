@@ -68,6 +68,11 @@ func main() {
 		for update := range updates {
 			if err := handler.HandleMessage(&update); err != nil {
 				log.Printf("Error handling message: %v", err)
+				// Отправляем сообщение пользователю об ошибке
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при обработке сообщения. Попробуйте еще раз.")
+				if _, err := bot.Send(msg); err != nil {
+					log.Printf("Error sending error message: %v", err)
+				}
 			}
 		}
 	}()
