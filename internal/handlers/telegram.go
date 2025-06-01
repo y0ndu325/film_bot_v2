@@ -16,6 +16,10 @@ type Handler struct {
 	states  map[int64]string
 }
 
+func (h *Handler) HandleCallback(update *tgbotapi.Update) any {
+	panic("unimplemented")
+}
+
 func New(bot *tgbotapi.BotAPI, service *service.MovieService, config *config.Config) *Handler {
 	return &Handler{
 		bot:     bot,
@@ -79,6 +83,12 @@ func (h *Handler) handleList(chatID int64) error {
 		response += fmt.Sprintf("-%s\n", movie.Title)
 	}
 
+	// Разбиваем сообщение на части, если оно слишком длинное
+	const maxLength = 4000
+	if len(response) > maxLength {
+		response = response[:maxLength] + "...\n(список обрезан из-за ограничений Telegram)"
+	}
+
 	msg := tgbotapi.NewMessage(chatID, "Список фильмов:\n"+response)
 	_, err = h.bot.Send(msg)
 	return err
@@ -92,6 +102,7 @@ func (h *Handler) handleRandom(chatID int64) error {
 			_, err := h.bot.Send(msg)
 			return err
 		}
+		return err
 	}
 
 	msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Будем смотреть это!: %s", movie.Title))
@@ -127,8 +138,8 @@ func (h *Handler) handleDelete(chatID int64) error {
 
 func (h *Handler) handleDeleteConfirmation(chatID int64, text string) error {
 	number, err := strconv.Atoi(text)
-	if err != nil {
-		msg := tgbotapi.NewMessage(chatID, "Введите корректный номер фильма.")
+	if err != nil || number <= 0 {
+		msg := tgbotapi.NewMessage(chatID, "Введите корректный номер фильма (положительное число).")
 		_, err := h.bot.Send(msg)
 		return err
 	}
