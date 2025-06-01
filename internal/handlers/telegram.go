@@ -16,8 +16,26 @@ type Handler struct {
 	states  map[int64]string
 }
 
-func (h *Handler) HandleCallback(update *tgbotapi.Update) any {
-	panic("unimplemented")
+func (h *Handler) HandleCallback(update *tgbotapi.Update) error {
+	if update.CallbackQuery == nil {
+		return nil
+	}
+
+	chatID := update.CallbackQuery.Message.Chat.ID
+	data := update.CallbackQuery.Data
+
+	switch data {
+	case "delete":
+		return h.handleDelete(chatID)
+	case "list":
+		return h.handleList(chatID)
+	case "random":
+		return h.handleRandom(chatID)
+	default:
+		msg := tgbotapi.NewMessage(chatID, "Неизвестная команда")
+		_, err := h.bot.Send(msg)
+		return err
+	}
 }
 
 func New(bot *tgbotapi.BotAPI, service *service.MovieService, config *config.Config) *Handler {

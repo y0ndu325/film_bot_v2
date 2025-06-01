@@ -2,6 +2,7 @@ package database
 
 import (
 	"filmBot/internal/models"
+	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -9,7 +10,9 @@ import (
 )
 
 type Database struct {
-	db *gorm.DB
+	db          *gorm.DB
+	mu          sync.RWMutex
+	tableExists bool
 }
 
 func NewDatabase(dsn string) (*Database, error) {
@@ -22,12 +25,17 @@ func NewDatabase(dsn string) (*Database, error) {
 		return nil, err
 	}
 
+	d := &Database{db: db}
+
+	// Проверяем существование таблицы один раз при инициализации
 	if !db.Migrator().HasTable(&models.Movie{}) {
 		if err := db.AutoMigrate(&models.Movie{}); err != nil {
 			return nil, err
 		}
 	}
-	return &Database{db: db}, nil
+	d.tableExists = true
+
+	return d, nil
 }
 
 func (d *Database) AddMovie(movie *models.Movie) error {

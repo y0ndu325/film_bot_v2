@@ -79,8 +79,10 @@ func main() {
 	// 9. Обработчик обновлений от Telegram
 	go func() {
 		for update := range updates {
-			// Проверяем, что пришло именно текстовое сообщение или callback_query
+			log.Printf("Received update: %+v", update)
+
 			if update.Message != nil {
+				log.Printf("Processing message: %s", update.Message.Text)
 				if err := handler.HandleMessage(&update); err != nil {
 					log.Printf("Error handling message: %v", err)
 					// Отправляем пользователю сообщение об ошибке
@@ -90,7 +92,7 @@ func main() {
 					}
 				}
 			} else if update.CallbackQuery != nil {
-				// Если это callback_query (нажатие на inline-кнопку)
+				log.Printf("Processing callback query: %s", update.CallbackQuery.Data)
 				if err := handler.HandleCallback(&update); err != nil {
 					log.Printf("Error handling callback_query: %v", err)
 					// Отправляем пользователю ошибку в чат того же сообщения
@@ -105,8 +107,9 @@ func main() {
 				if _, ackErr := bot.Request(ack); ackErr != nil {
 					log.Printf("Error sending callback acknowledgement: %v", ackErr)
 				}
+			} else {
+				log.Printf("Received unknown update type")
 			}
-			// Если пришёл какой-то другой тип апдейта — просто пропускаем
 		}
 	}()
 
